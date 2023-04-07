@@ -100,13 +100,13 @@ function App() {
           <button
             style={{ padding: 10, minWidth: 80 }}
             onClick={async () => {
+              setWords(words.filter((w) => w.id !== word.id));
+              (angre.current as any) = word;
+              setAngret(null);
               await supabase
                 .from("words_no")
                 .update({ checked: "discarded" })
                 .eq("id", word.id);
-              setWords(words.filter((w) => w.id !== word.id));
-              (angre.current as any) = word;
-              setAngret(null);
             }}
           >
             Nei
@@ -114,13 +114,13 @@ function App() {
           <button
             style={{ padding: 10, minWidth: 80 }}
             onClick={async () => {
+              setWords(words.filter((w) => w.id !== word.id));
+              (angre.current as any) = word;
+              setAngret(null);
               await supabase
                 .from("words_no")
                 .update({ checked: "unsuitable" })
                 .eq("id", word.id);
-              setWords(words.filter((w) => w.id !== word.id));
-              (angre.current as any) = word;
-              setAngret(null);
             }}
           >
             yes but NO
@@ -128,13 +128,13 @@ function App() {
           <button
             style={{ padding: 10, minWidth: 80 }}
             onClick={async () => {
+              setWords(words.filter((w) => w.id !== word.id));
+              (angre.current as any) = word;
+              setAngret(null);
               await supabase
                 .from("words_no")
                 .update({ checked: "maybe" })
                 .eq("id", word.id);
-              setWords(words.filter((w) => w.id !== word.id));
-              (angre.current as any) = word;
-              setAngret(null);
             }}
           >
             Kanskje?
@@ -142,13 +142,13 @@ function App() {
           <button
             style={{ padding: 10, minWidth: 80 }}
             onClick={async () => {
+              setWords(words.filter((w) => w.id !== word.id));
+              (angre.current as any) = word;
+              setAngret(null);
               await supabase
                 .from("words_no")
                 .update({ checked: "confirmed" })
                 .eq("id", word.id);
-              setWords(words.filter((w) => w.id !== word.id));
-              (angre.current as any) = word;
-              setAngret(null);
             }}
           >
             Ja!
@@ -195,13 +195,13 @@ function App() {
               minWidth: 80,
             }}
             onClick={async () => {
+              setWords(words.filter((w) => w.id !== word.id));
+              (angre.current as any) = word;
+              setAngret(null);
               await supabase
                 .from("words_no")
                 .update({ checked: "egennavn" })
                 .eq("id", word.id);
-              setWords(words.filter((w) => w.id !== word.id));
-              (angre.current as any) = word;
-              setAngret(null);
             }}
           >
             Egennavn
@@ -212,13 +212,13 @@ function App() {
               minWidth: 80,
             }}
             onClick={async () => {
+              setWords(words.filter((w) => w.id !== word.id));
+              (angre.current as any) = word;
+              setAngret(null);
               await supabase
                 .from("words_no")
                 .update({ checked: "abbreviation" })
                 .eq("id", word.id);
-              setWords(words.filter((w) => w.id !== word.id));
-              (angre.current as any) = word;
-              setAngret(null);
             }}
           >
             Forkortelse
