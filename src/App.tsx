@@ -27,14 +27,14 @@ function App() {
   const word = words[0];
 
   const candidate_words = [
-    `${word.word}`,
-    `${word.word}en`,
-    `${word.word}ene`,
-    `${word.word}enes`,
-    `${word.word}ens`,
-    `${word.word}er`,
-    `${word.word}ers`,
-    `${word.word}s`,
+    `${word?.word}`,
+    `${word?.word}en`,
+    `${word?.word}ene`,
+    `${word?.word}enes`,
+    `${word?.word}ens`,
+    `${word?.word}er`,
+    `${word?.word}ers`,
+    `${word?.word}s`,
   ];
 
   const is_bøyning = candidate_words.every((c) =>
@@ -43,6 +43,8 @@ function App() {
       .map((w) => w.word)
       .includes(c)
   );
+
+  console.log(words.slice(0, candidate_words.length));
 
   return (
     <div className="App">
@@ -188,7 +190,7 @@ function App() {
                   .eq("id", w.id);
                 ids.push(w.id);
               }
-              setWords(words.filter((w) => !ids.includes(w.id)));
+              setWords(words.filter((w) => ids.includes(w.id)));
             }}
           >
             LET's GO
