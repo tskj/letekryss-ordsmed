@@ -26,6 +26,24 @@ function App() {
   const [words, setWords] = useState<Word[]>([]);
   const word = words[0];
 
+  const candidate_words = [
+    `${word.word}`,
+    `${word.word}en`,
+    `${word.word}ene`,
+    `${word.word}enes`,
+    `${word.word}ens`,
+    `${word.word}er`,
+    `${word.word}ers`,
+    `${word.word}s`,
+  ];
+
+  const is_bøyning = candidate_words.every((c) =>
+    words
+      .slice(0, candidate_words.length)
+      .map((w) => w.word)
+      .includes(c)
+  );
+
   return (
     <div className="App">
       <header className="App-header">
@@ -152,6 +170,28 @@ function App() {
             }}
           >
             Ja!
+          </button>
+        </div>
+        <div style={{ marginTop: 10 }}>
+          {is_bøyning && candidate_words.map((w) => <div>{w}</div>)}
+          <button
+            onClick={async () => {
+              let ids = [word.id];
+              await supabase
+                .from("words_no")
+                .update({ checked: "confirmed" })
+                .eq("id", word.id);
+              for (const w of words.slice(1, candidate_words.length)) {
+                await supabase
+                  .from("words_no")
+                  .update({ checked: "unsuitable" })
+                  .eq("id", w.id);
+                ids.push(w.id);
+              }
+              setWords(words.filter((w) => !ids.includes(w.id)));
+            }}
+          >
+            LET's GO
           </button>
         </div>
         <div
