@@ -17,7 +17,13 @@ function App() {
     localStorage.setItem("supabase-key", supabaseKey);
   }, [supabaseKey]);
 
-  const [filter, setFilter] = useState("");
+  const [filter, setFilter] = useState(
+    localStorage.getItem("filter-key") ?? ""
+  );
+  useEffect(() => {
+    localStorage.setItem("filter-key", filter);
+  }, [filter]);
+
   const [mode, setMode] = useState("unchecked");
 
   const angre = useRef<Word[]>([]);
@@ -43,10 +49,10 @@ function App() {
       .includes(c)
   );
 
-  const restart = async (m?: string) => {
+  const restart = async (m?: string, f?: string) => {
     if (!supabase) supabase = createClient(supabaseUrl, supabaseKey);
 
-    const filterNumber = parseInt(filter, 10);
+    const filterNumber = parseInt(f ?? filter, 10);
     let { data: words_no } = await supabase
       .from("words_no")
       .select("*")
@@ -54,15 +60,15 @@ function App() {
       .order("id")
       .ilike(
         "word",
-        filter && !isNaN(filterNumber)
+        (f ?? filter) && !isNaN(filterNumber)
           ? "_".repeat(filterNumber)
-          : filter
-          ? `${filter}%`
+          : f ?? filter
+          ? `${f ?? filter}%`
           : "%"
       );
 
     if (words_no?.length === 0) {
-      alert("no more data");
+      setWords([]);
     } else {
       setWords(words_no as any);
       angre.current = angre.current.filter(
@@ -71,7 +77,9 @@ function App() {
     }
   };
 
-  console.log(angre);
+  useEffect(() => {
+    if (supabaseKey) restart();
+  }, []);
 
   return (
     <div className="App">
@@ -100,7 +108,13 @@ function App() {
         >
           <div>
             filter:
-            <input value={filter} onChange={(e) => setFilter(e.target.value)} />
+            <input
+              value={filter}
+              onChange={(e) => {
+                setFilter(e.target.value);
+                restart(mode, e.target.value);
+              }}
+            />
           </div>
           <div>
             modus:
