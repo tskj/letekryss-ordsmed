@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./supabase";
 import "./App.css";
 
@@ -30,6 +30,57 @@ function App() {
 
   const [words, setWords] = useState<Word[]>([]);
   const word = words[0];
+
+  const onAccept = async () => {
+    setWords(words.filter((w) => w.id !== word.id));
+    angre.current?.push(word);
+    setFasitTempDisabled(true);
+    await supabase
+      .from("words_no")
+      .update({ checked: "confirmed" })
+      .eq("id", word.id);
+  };
+  const onReject = async () => {
+    setWords(words.filter((w) => w.id !== word.id));
+    angre.current?.push(word);
+    await supabase
+      .from("words_no")
+      .update({ checked: "unsuitable" })
+      .eq("id", word.id);
+  };
+  const onUndo = async () => {
+    const toAngre = angre.current?.pop();
+    if (toAngre) {
+      await supabase
+        .from("words_no")
+        .update({ checked: "unchecked" })
+        .eq("id", toAngre.id);
+      restart(mode);
+    }
+  };
+
+  const [fasit_is_temporarily_disabled, setFasitTempDisabled] = useState(false);
+  useEffect(() => {
+    if (fasit_is_temporarily_disabled) {
+      setTimeout(() => setFasitTempDisabled(false), 1000);
+    }
+  }, [fasit_is_temporarily_disabled]);
+
+  useEffect(() => {
+    const listener = (e: any) => {
+      if (e.key === "j") {
+        if (!fasit_is_temporarily_disabled) onAccept();
+      }
+      if (e.key === "f") {
+        onReject();
+      }
+      if (e.key === "z") {
+        onUndo();
+      }
+    };
+    document.addEventListener("keydown", listener);
+    return () => document.removeEventListener("keydown", listener);
+  }, [fasit_is_temporarily_disabled, onAccept, onReject, onUndo]);
 
   const candidate_words = [
     `${word?.word}`,
@@ -163,16 +214,9 @@ function App() {
               backgroundColor: "orangered",
               color: "black",
             }}
-            onClick={async () => {
-              setWords(words.filter((w) => w.id !== word.id));
-              angre.current?.push(word);
-              await supabase
-                .from("words_no")
-                .update({ checked: "unsuitable" })
-                .eq("id", word.id);
-            }}
+            onClick={onReject}
           >
-            ikke fasitverdig
+            ikke fasitverdig (F)
           </button>
           <button
             style={{
@@ -181,16 +225,10 @@ function App() {
               backgroundColor: "green",
               color: "white",
             }}
-            onClick={async () => {
-              setWords(words.filter((w) => w.id !== word.id));
-              angre.current?.push(word);
-              await supabase
-                .from("words_no")
-                .update({ checked: "confirmed" })
-                .eq("id", word.id);
-            }}
+            disabled={fasit_is_temporarily_disabled}
+            onClick={onAccept}
           >
-            Legg til fasit!
+            Legg til fasit! (J)
           </button>
         </div>
         <div style={{ marginTop: 10 }}>
@@ -245,18 +283,9 @@ function App() {
               padding: 10,
               minWidth: 80,
             }}
-            onClick={async () => {
-              const toAngre = angre.current?.pop();
-              if (toAngre) {
-                await supabase
-                  .from("words_no")
-                  .update({ checked: "unchecked" })
-                  .eq("id", toAngre.id);
-                restart(mode);
-              }
-            }}
+            onClick={onUndo}
           >
-            Angre
+            Angre (Z)
           </button>
           {angre.current
             .slice(-2)
