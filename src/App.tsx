@@ -65,6 +65,9 @@ function App() {
       alert("no more data");
     } else {
       setWords(words_no as any);
+      angre.current = angre.current.filter(
+        (w) => !words_no.map((x: any) => x.id).includes(w.id)
+      );
     }
   };
 
@@ -219,7 +222,7 @@ function App() {
           style={{
             position: "fixed",
             left: 0,
-            bottom: 0,
+            bottom: 50,
             display: "flex",
           }}
         >
