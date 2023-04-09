@@ -44,7 +44,25 @@ function App() {
       .includes(c)
   );
 
-  console.log(words.slice(0, candidate_words.length));
+  const restart = async (m?: string) => {
+    if (!supabase) supabase = createClient(supabaseUrl, supabaseKey);
+
+    let { data: words_no } = await supabase
+      .from("words_no")
+      .select("*")
+      .eq("checked", m ?? mode)
+      .order("id")
+      .ilike(
+        "word",
+        numberOfLetters ? "_".repeat(parseInt(numberOfLetters, 10)) : "%"
+      );
+
+    if (words_no?.length === 0) {
+      alert("no more data");
+    } else {
+      setWords(words_no as any);
+    }
+  };
 
   return (
     <div className="App">
@@ -59,31 +77,7 @@ function App() {
             value={supabaseKey}
             onChange={(e) => setSupabaseKey(e.target.value)}
           />
-          <button
-            onClick={async () => {
-              supabase = createClient(supabaseUrl, supabaseKey);
-
-              let { data: words_no } = await supabase
-                .from("words_no")
-                .select("*")
-                .eq("checked", mode)
-                .order("id")
-                .ilike(
-                  "word",
-                  numberOfLetters
-                    ? "_".repeat(parseInt(numberOfLetters, 10))
-                    : "%"
-                );
-
-              if (words_no?.length === 0) {
-                alert("no more data");
-              } else {
-                setWords(words_no as any);
-              }
-            }}
-          >
-            start!
-          </button>
+          <button onClick={() => restart()}>start!</button>
         </div>
         <div
           style={{
@@ -104,7 +98,13 @@ function App() {
           </div>
           <div>
             modus:
-            <select value={mode} onChange={(e) => setMode(e.target.value)}>
+            <select
+              value={mode}
+              onChange={(e) => {
+                setMode(e.target.value);
+                restart(e.target.value);
+              }}
+            >
               <option value="unchecked">uklassifiserte ord</option>
               <option value="unsuitable">forkastede ord</option>
               <option value="confirmed">godkjente fasitord</option>
@@ -113,6 +113,19 @@ function App() {
             </select>
           </div>
         </div>
+        {words
+          .slice(1, 10)
+          .reverse()
+          .map((w, i) => (
+            <div
+              style={{
+                opacity: 1 / (10 - i + 2) - 0.05,
+              }}
+              key={w.word + w.id + i}
+            >
+              {w.word}
+            </div>
+          ))}
         {word && <div>{word.word}</div>}
         <div
           style={{
