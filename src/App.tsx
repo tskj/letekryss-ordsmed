@@ -20,8 +20,7 @@ function App() {
   const [numberOfLetters, setNumberOfLetters] = useState("");
   const [mode, setMode] = useState("unchecked");
 
-  const angre = useRef<Word>(null);
-  const [angret, setAngret] = useState<Word | null>(null);
+  const angre = useRef<Word[]>([]);
 
   const [words, setWords] = useState<Word[]>([]);
   const word = words[0];
@@ -63,6 +62,8 @@ function App() {
       setWords(words_no as any);
     }
   };
+
+  console.log(angre);
 
   return (
     <div className="App">
@@ -145,8 +146,7 @@ function App() {
             }}
             onClick={async () => {
               setWords(words.filter((w) => w.id !== word.id));
-              (angre.current as any) = word;
-              setAngret(null);
+              angre.current?.push(word);
               await supabase
                 .from("words_no")
                 .update({ checked: "unsuitable" })
@@ -164,8 +164,7 @@ function App() {
             }}
             onClick={async () => {
               setWords(words.filter((w) => w.id !== word.id));
-              (angre.current as any) = word;
-              setAngret(null);
+              angre.current?.push(word);
               await supabase
                 .from("words_no")
                 .update({ checked: "confirmed" })
@@ -228,18 +227,33 @@ function App() {
               minWidth: 80,
             }}
             onClick={async () => {
-              if (angre.current) {
+              const toAngre = angre.current?.pop();
+              if (toAngre) {
                 await supabase
                   .from("words_no")
                   .update({ checked: "unchecked" })
-                  .eq("id", angre.current.id);
-                setAngret(angre.current);
+                  .eq("id", toAngre.id);
+                restart(mode);
               }
             }}
           >
             Angre
           </button>
-          {angret && <div>angret: {angret.word}</div>}
+          {angre.current
+            .slice(-2)
+            .reverse()
+            .map((w, i) => (
+              <div
+                style={{
+                  opacity: 1 / (i + 1) - 0.3,
+                  fontSize: 15,
+                  marginLeft: 10,
+                }}
+                key={w.id}
+              >
+                {w.word}
+              </div>
+            ))}
         </div>
         <div
           style={{
@@ -253,8 +267,7 @@ function App() {
             style={{ padding: 10, minWidth: 80 }}
             onClick={async () => {
               setWords(words.filter((w) => w.id !== word.id));
-              (angre.current as any) = word;
-              setAngret(null);
+              angre.current?.push(word);
               await supabase
                 .from("words_no")
                 .update({ checked: "discarded" })
@@ -267,8 +280,7 @@ function App() {
             style={{ padding: 10, minWidth: 80, marginRight: 10 }}
             onClick={async () => {
               setWords(words.filter((w) => w.id !== word.id));
-              (angre.current as any) = word;
-              setAngret(null);
+              angre.current?.push(word);
               await supabase
                 .from("words_no")
                 .update({ checked: "maybe" })
@@ -284,8 +296,7 @@ function App() {
             }}
             onClick={async () => {
               setWords(words.filter((w) => w.id !== word.id));
-              (angre.current as any) = word;
-              setAngret(null);
+              angre.current?.push(word);
               await supabase
                 .from("words_no")
                 .update({ checked: "egennavn" })
@@ -301,8 +312,7 @@ function App() {
             }}
             onClick={async () => {
               setWords(words.filter((w) => w.id !== word.id));
-              (angre.current as any) = word;
-              setAngret(null);
+              angre.current?.push(word);
               await supabase
                 .from("words_no")
                 .update({ checked: "abbreviation" })
@@ -327,8 +337,7 @@ function App() {
             }}
             onClick={async () => {
               setWords(words.filter((w) => w.id !== word.id));
-              (angre.current as any) = word;
-              setAngret(null);
+              angre.current?.push(word);
             }}
           >
             Skip
