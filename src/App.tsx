@@ -82,7 +82,7 @@ function App() {
               }
             }}
           >
-            init
+            start!
           </button>
         </div>
         <div
@@ -96,7 +96,7 @@ function App() {
           }}
         >
           <div>
-            antall bokstaver:
+            filter:
             <input
               value={numberOfLetters}
               onChange={(e) => setNumberOfLetters(e.target.value)}
@@ -104,7 +104,13 @@ function App() {
           </div>
           <div>
             modus:
-            <input value={mode} onChange={(e) => setMode(e.target.value)} />
+            <select value={mode} onChange={(e) => setMode(e.target.value)}>
+              <option value="unchecked">uklassifiserte ord</option>
+              <option value="unsuitable">forkastede ord</option>
+              <option value="confirmed">godkjente fasitord</option>
+              <option value="discarded">ikke-ord</option>
+              <option value="maybe">kanskje?</option>
+            </select>
           </div>
         </div>
         {word && <div>{word.word}</div>}
@@ -118,21 +124,12 @@ function App() {
           }}
         >
           <button
-            style={{ padding: 10, minWidth: 80 }}
-            onClick={async () => {
-              setWords(words.filter((w) => w.id !== word.id));
-              (angre.current as any) = word;
-              setAngret(null);
-              await supabase
-                .from("words_no")
-                .update({ checked: "discarded" })
-                .eq("id", word.id);
+            style={{
+              padding: 10,
+              minWidth: 80,
+              backgroundColor: "orangered",
+              color: "black",
             }}
-          >
-            Nei
-          </button>
-          <button
-            style={{ padding: 10, minWidth: 80 }}
             onClick={async () => {
               setWords(words.filter((w) => w.id !== word.id));
               (angre.current as any) = word;
@@ -143,24 +140,15 @@ function App() {
                 .eq("id", word.id);
             }}
           >
-            yes but NO
+            ikke fasitverdig
           </button>
           <button
-            style={{ padding: 10, minWidth: 80 }}
-            onClick={async () => {
-              setWords(words.filter((w) => w.id !== word.id));
-              (angre.current as any) = word;
-              setAngret(null);
-              await supabase
-                .from("words_no")
-                .update({ checked: "maybe" })
-                .eq("id", word.id);
+            style={{
+              padding: 10,
+              minWidth: 80,
+              backgroundColor: "green",
+              color: "white",
             }}
-          >
-            Kanskje?
-          </button>
-          <button
-            style={{ padding: 10, minWidth: 80 }}
             onClick={async () => {
               setWords(words.filter((w) => w.id !== word.id));
               (angre.current as any) = word;
@@ -171,30 +159,47 @@ function App() {
                 .eq("id", word.id);
             }}
           >
-            Ja!
+            Legg til fasit!
           </button>
         </div>
         <div style={{ marginTop: 10 }}>
-          {is_bøyning && candidate_words.map((w) => <div>{w}</div>)}
-          <button
-            onClick={async () => {
-              let ids = [word.id];
-              await supabase
-                .from("words_no")
-                .update({ checked: "confirmed" })
-                .eq("id", word.id);
-              for (const w of words.slice(1, candidate_words.length)) {
-                await supabase
-                  .from("words_no")
-                  .update({ checked: "unsuitable" })
-                  .eq("id", w.id);
-                ids.push(w.id);
-              }
-              setWords(words.filter((w) => ids.includes(w.id)));
-            }}
-          >
-            LET's GO
-          </button>
+          {is_bøyning && (
+            <>
+              {candidate_words.map((w, i) => (
+                <div
+                  key={w + i}
+                  style={{
+                    color: i === 0 ? "green" : "orangered",
+                  }}
+                >
+                  {w}
+                </div>
+              ))}
+              <button
+                style={{
+                  backgroundColor: "green",
+                  color: "white",
+                }}
+                onClick={async () => {
+                  let ids = [word.id];
+                  await supabase
+                    .from("words_no")
+                    .update({ checked: "confirmed" })
+                    .eq("id", word.id);
+                  for (const w of words.slice(1, candidate_words.length)) {
+                    await supabase
+                      .from("words_no")
+                      .update({ checked: "unsuitable" })
+                      .eq("id", w.id);
+                    ids.push(w.id);
+                  }
+                  setWords(words.filter((w) => !ids.includes(w.id)));
+                }}
+              >
+                klassifiser automatisk!
+              </button>
+            </>
+          )}
         </div>
         <div
           style={{
@@ -231,6 +236,34 @@ function App() {
             display: "flex",
           }}
         >
+          <button
+            style={{ padding: 10, minWidth: 80 }}
+            onClick={async () => {
+              setWords(words.filter((w) => w.id !== word.id));
+              (angre.current as any) = word;
+              setAngret(null);
+              await supabase
+                .from("words_no")
+                .update({ checked: "discarded" })
+                .eq("id", word.id);
+            }}
+          >
+            ikke-ord
+          </button>
+          <button
+            style={{ padding: 10, minWidth: 80, marginRight: 10 }}
+            onClick={async () => {
+              setWords(words.filter((w) => w.id !== word.id));
+              (angre.current as any) = word;
+              setAngret(null);
+              await supabase
+                .from("words_no")
+                .update({ checked: "maybe" })
+                .eq("id", word.id);
+            }}
+          >
+            kanskje?
+          </button>
           <button
             style={{
               padding: 10,
