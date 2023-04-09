@@ -17,7 +17,7 @@ function App() {
     localStorage.setItem("supabase-key", supabaseKey);
   }, [supabaseKey]);
 
-  const [numberOfLetters, setNumberOfLetters] = useState("");
+  const [filter, setFilter] = useState("");
   const [mode, setMode] = useState("unchecked");
 
   const angre = useRef<Word[]>([]);
@@ -46,6 +46,7 @@ function App() {
   const restart = async (m?: string) => {
     if (!supabase) supabase = createClient(supabaseUrl, supabaseKey);
 
+    const filterNumber = parseInt(filter, 10);
     let { data: words_no } = await supabase
       .from("words_no")
       .select("*")
@@ -53,7 +54,11 @@ function App() {
       .order("id")
       .ilike(
         "word",
-        numberOfLetters ? "_".repeat(parseInt(numberOfLetters, 10)) : "%"
+        filter && !isNaN(filterNumber)
+          ? "_".repeat(filterNumber)
+          : filter
+          ? `${filter}%`
+          : "%"
       );
 
     if (words_no?.length === 0) {
@@ -92,10 +97,7 @@ function App() {
         >
           <div>
             filter:
-            <input
-              value={numberOfLetters}
-              onChange={(e) => setNumberOfLetters(e.target.value)}
-            />
+            <input value={filter} onChange={(e) => setFilter(e.target.value)} />
           </div>
           <div>
             modus:
