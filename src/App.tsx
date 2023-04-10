@@ -37,7 +37,7 @@ function App() {
     setFasitTempDisabled(true);
     await supabase
       .from("words_no")
-      .update({ checked: "confirmed" })
+      .update({ checked: "approved" })
       .eq("id", word.id);
   };
   const onReject = async () => {
@@ -178,7 +178,7 @@ function App() {
             >
               <option value="unchecked">uklassifiserte ord</option>
               <option value="unsuitable">forkastede ord</option>
-              <option value="confirmed">godkjente fasitord</option>
+              <option value="approved">godkjente fasitord</option>
               <option value="discarded">ikke-ord</option>
               <option value="maybe">kanskje?</option>
             </select>
@@ -280,7 +280,7 @@ function App() {
                   let ids = [word.id];
                   await supabase
                     .from("words_no")
-                    .update({ checked: "confirmed" })
+                    .update({ checked: "approved" })
                     .eq("id", word.id);
                   for (const w of words.slice(1, candidate_words.length)) {
                     await supabase
