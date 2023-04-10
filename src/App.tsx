@@ -190,7 +190,8 @@ function App() {
           .map((w, i) => (
             <div
               style={{
-                opacity: 1 / (10 - i + 2) - 0.05,
+                fontWeight: "lighter",
+                opacity: 1 / (10 - i) - 0.01,
               }}
               key={w.word + w.id + i}
             >
@@ -213,6 +214,7 @@ function App() {
               minWidth: 80,
               backgroundColor: "orangered",
               color: "black",
+              userSelect: "none",
             }}
             onClick={onReject}
           >
@@ -224,6 +226,7 @@ function App() {
               minWidth: 80,
               backgroundColor: "green",
               color: "white",
+              userSelect: "none",
             }}
             disabled={fasit_is_temporarily_disabled}
             onClick={onAccept}
@@ -244,6 +247,30 @@ function App() {
                   {w}
                 </div>
               ))}
+              <button
+                style={{
+                  backgroundColor: "orangered",
+                  color: "black",
+                  marginRight: 20,
+                }}
+                onClick={async () => {
+                  let ids = [word.id];
+                  await supabase
+                    .from("words_no")
+                    .update({ checked: "unsuitable" })
+                    .eq("id", word.id);
+                  for (const w of words.slice(1, candidate_words.length)) {
+                    await supabase
+                      .from("words_no")
+                      .update({ checked: "unsuitable" })
+                      .eq("id", w.id);
+                    ids.push(w.id);
+                  }
+                  setWords(words.filter((w) => !ids.includes(w.id)));
+                }}
+              >
+                nei til alle
+              </button>
               <button
                 style={{
                   backgroundColor: "green",
