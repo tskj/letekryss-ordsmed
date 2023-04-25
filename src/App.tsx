@@ -34,7 +34,7 @@ function App() {
   const onAccept = async () => {
     setWords(words.filter((w) => w.id !== word.id));
     angre.current?.push(word);
-    setFasitTempDisabled(true);
+    if (mode !== "approved") setFasitTempDisabled(true);
     await supabase
       .from("words_no")
       .update({ checked: "approved" })
