@@ -43,6 +43,7 @@ function App() {
   const onReject = async () => {
     setWords(words.filter((w) => w.id !== word.id));
     angre.current?.push(word);
+    setFasitTempDisabled(false);
     await supabase
       .from("words_no")
       .update({ checked: "unsuitable" })
