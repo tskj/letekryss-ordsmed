@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/letekryss-ordsmed/static/css/main.073c9b0a.css",
-    "main.js": "/letekryss-ordsmed/static/js/main.46286cf0.js",
+    "main.js": "/letekryss-ordsmed/static/js/main.eb712bd3.js",
     "index.html": "/letekryss-ordsmed/index.html",
     "main.073c9b0a.css.map": "/letekryss-ordsmed/static/css/main.073c9b0a.css.map",
-    "main.46286cf0.js.map": "/letekryss-ordsmed/static/js/main.46286cf0.js.map"
+    "main.eb712bd3.js.map": "/letekryss-ordsmed/static/js/main.eb712bd3.js.map"
   },
   "entrypoints": [
     "static/css/main.073c9b0a.css",
-    "static/js/main.46286cf0.js"
+    "static/js/main.eb712bd3.js"
   ]
 }
