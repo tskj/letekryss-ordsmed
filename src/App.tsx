@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   ApiError,
   STATUSES,
@@ -68,6 +68,22 @@ const write = (key: string, value: string) => {
 let next_key = 0;
 const new_key = () => `d${next_key++}`;
 
+type Departure = { key: string; word: string; kind: "approve" | "reject" | "other"; milestone: boolean };
+
+const DEPARTURE_MS = 900;
+
+// every so many approved words in a session gets a bigger burst
+const MILESTONE_EVERY = 25;
+
+// the sparkles around an approved word: an angle and a distance each
+const SPARKLES = Array.from({ length: 14 }, (_, i) => ({
+  angle:    (360 / 14) * i + (i % 2) * 9,
+  distance: 90 + ((i * 37) % 70),
+}));
+
+const departure_kind = (to: Status): Departure["kind"] =>
+  to === "approved" ? "approve" : to === "unsuitable" || to === "discarded" ? "reject" : "other";
+
 const lookup_url = (word: string) => `https://ordbokene.no/nob/bm/${encodeURIComponent(word)}`;
 
 export default function App() {
@@ -110,6 +126,10 @@ function Picker({ token, onLogout }: { token: string; onLogout: () => void }) {
 
   const [session, set_session] = useState({ decided: 0, started_at: 0 });
   const [cooling, set_cooling] = useState(false);
+
+  // the words that were just decided, animating away while the next one comes in
+  const [departures, set_departures] = useState<Departure[]>([]);
+  const [approved_now, set_approved_now] = useState(0);
 
   // the highest id loaded, so the next page starts after it. reset with the filter
   const after_id   = useRef(0);
@@ -219,6 +239,23 @@ function Picker({ token, onLogout }: { token: string; onLogout: () => void }) {
     );
   };
 
+  // the counts at the top follow along, until the next time they're loaded
+  const count_changes = (changes: Change[]) =>
+    set_stats((st) =>
+      st && changes
+        .filter((c) => c.from !== c.to)
+        .reduce((acc, c) => ({ ...acc, [c.from]: (acc[c.from] ?? 0) - 1, [c.to]: (acc[c.to] ?? 0) + 1 }), st),
+    );
+
+  const depart = (key: string, word: string, to: Status) => {
+    const kind      = departure_kind(to);
+    const milestone = kind === "approve" && (approved_now + 1) % MILESTONE_EVERY === 0;
+    if (kind === "approve") set_approved_now((a) => a + 1);
+
+    set_departures((ds) => [...ds.slice(-3), { key, word, kind, milestone }]);
+    setTimeout(() => set_departures((ds) => ds.filter((d) => d.key !== key)), milestone ? DEPARTURE_MS * 2 : DEPARTURE_MS);
+  };
+
   const count_decision = () => {
     set_session((s) => ({ decided: s.decided + 1, started_at: s.started_at || Date.now() }));
     if ((session.decided + 1) % 25 === 0) load_stats();
@@ -240,6 +277,8 @@ function Picker({ token, onLogout }: { token: string; onLogout: () => void }) {
 
     set_queue((q) => q.filter((w) => !words.some((x) => x.id === w.id)));
     set_history((h) => [{ key, changes, state: "saving" as const }, ...h].slice(0, HISTORY_SIZE));
+    depart(key, current.word, to);
+    count_changes(changes);
     set_remaining((r) => (r === null ? r : Math.max(0, r - words.length)));
     count_decision();
     save(key, changes);
@@ -265,6 +304,7 @@ function Picker({ token, onLogout }: { token: string; onLogout: () => void }) {
 
     const back = last.changes.map((c) => ({ word: c.word, from: c.to, to: c.from }));
     save(new_key(), back);
+    count_changes(back);
 
     const returning = back
       .filter((c) => c.to === filter.status)
@@ -288,6 +328,7 @@ function Picker({ token, onLogout }: { token: string; onLogout: () => void }) {
     );
     set_selected(null);
     save(key, changes);
+    count_changes(changes);
   };
 
   const last_approve = useRef(0);
@@ -376,7 +417,12 @@ function Picker({ token, onLogout }: { token: string; onLogout: () => void }) {
 
         <div className="stats">
           <span className="stat">{remaining !== null ? n(remaining) : "…"} igjen</span>
-          <span className="stat gold" title="godkjente ord på 4–10 bokstaver">{stats ? n(stats.approved ?? 0) : "…"} fasitord</span>
+          <span className="stat gold" title="godkjente ord på 4–10 bokstaver">
+            {stats ? n(stats.approved ?? 0) : "…"} fasitord
+            {departures.filter((d) => d.kind === "approve").map((d) => (
+              <span key={d.key} className="plus-one" aria-hidden>+1</span>
+            ))}
+          </span>
           <span className="stat" title="ikke fasitord: uegnet, forkastet, egennavn eller forkortelse">{stats ? n(rejected) : "…"} forkastet</span>
           <span className="stat" title="av alle ord på 4–10 bokstaver">{stats ? `${n(reviewed)} gjennomgått · ${reviewed_percent} %` : "…"}</span>
           <span className="stat">{session.decided} denne økta{rate !== null ? ` · ${rate}/min` : ""}</span>
@@ -385,6 +431,23 @@ function Picker({ token, onLogout }: { token: string; onLogout: () => void }) {
       </header>
 
       <main className="stage">
+        <div className="slot">
+        {departures.map((d) => (
+          <div key={d.key} className={`departure ${d.kind}${d.milestone ? " milestone" : ""}`} aria-hidden>
+            <div className="word">{d.word}</div>
+            {d.kind === "approve" && (
+              <>
+                <div className="stamp">✓ fasitord</div>
+                <div className="sparkles">
+                  {SPARKLES.map((sp, i) => (
+                    <span key={i} style={{ "--angle": `${sp.angle}deg`, "--distance": `${sp.distance * (d.milestone ? 2.2 : 1)}px` } as CSSProperties} />
+                  ))}
+                </div>
+              </>
+            )}
+            {d.milestone && <div className="milestone-text">{approved_now} fasitord denne økta!</div>}
+          </div>
+        ))}
         {target ? (
           <div className="current editing">
             <div className="hint">endrer et tidligere valg · Esc for å gå tilbake</div>
@@ -392,7 +455,7 @@ function Picker({ token, onLogout }: { token: string; onLogout: () => void }) {
             <div className="meta">nå: {STATUS_LABELS[target.to]}</div>
           </div>
         ) : current ? (
-          <div className="current" key={current.id}>
+          <div className="current incoming" key={current.id}>
             <div className="word">{current.word}</div>
             <div className="meta">
               {current.word.length} bokstaver ·{" "}
@@ -402,6 +465,7 @@ function Picker({ token, onLogout }: { token: string; onLogout: () => void }) {
         ) : (
           <div className="current empty">{loading ? "henter ord…" : "ingen flere ord med dette filteret"}</div>
         )}
+        </div>
 
         {!target && inflections.length > 0 && (
           <div className="inflections">

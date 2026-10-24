@@ -167,15 +167,261 @@ kbd {
   overflow: hidden;
 }
 
+.slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .current {
   text-align: center;
   animation: word-in 160ms ease-out;
+}
+
+/* the next word waits for the decided one to get out of the way */
+.current.incoming {
+  animation: word-in 200ms 200ms ease-out backwards;
 }
 
 @keyframes word-in {
   from {
     opacity: 0;
     transform: translateY(8px);
+  }
+}
+
+/* a decided word on its way out, over the next one coming in */
+
+.departure {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  white-space: nowrap;
+  text-align: center;
+  z-index: 2;
+}
+
+.departure .word {
+  font-size: clamp(40px, 8vw, 88px);
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.departure.approve .word {
+  color: var(--approve);
+  animation: approved 900ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes approved {
+  0% {
+    color: var(--found);
+    transform: scale(1);
+    text-shadow: 0 0 0 transparent;
+  }
+  14% {
+    color: var(--approve);
+    transform: scale(1.1);
+    text-shadow: 0 0 28px rgba(127, 214, 164, 0.8);
+  }
+  35% {
+    opacity: 0.9;
+    transform: scale(1) translateY(-50px);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.7) translateY(-130px);
+    text-shadow: 0 0 40px rgba(127, 214, 164, 0);
+  }
+}
+
+.departure .stamp {
+  position: absolute;
+  top: -6px;
+  right: -28px;
+  padding: 4px 10px;
+  border: 2px solid var(--approve);
+  border-radius: 8px;
+  color: var(--approve);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  animation: stamp 900ms ease-out forwards;
+}
+
+@keyframes stamp {
+  0% {
+    opacity: 0;
+    transform: rotate(-14deg) scale(2.2);
+  }
+  16% {
+    opacity: 1;
+    transform: rotate(-10deg) scale(0.95);
+  }
+  24% {
+    transform: rotate(-10deg) scale(1);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(-10deg) translateY(-90px);
+  }
+}
+
+.sparkles {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+}
+
+.sparkles span {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  margin: -4px;
+  border-radius: 50%;
+  background: var(--found);
+  box-shadow: 0 0 10px var(--found);
+  animation: sparkle 800ms ease-out forwards;
+}
+
+.sparkles span:nth-child(3n) {
+  background: var(--approve);
+  box-shadow: 0 0 10px var(--approve);
+}
+
+.sparkles span:nth-child(4n) {
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+}
+
+@keyframes sparkle {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--angle)) translateX(20px) scale(0.4);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--angle)) translateX(var(--distance)) scale(1);
+  }
+}
+
+.departure.milestone .sparkles span {
+  animation-duration: 1400ms;
+}
+
+.milestone-text {
+  position: absolute;
+  left: 50%;
+  top: -52px;
+  translate: -50% 0;
+  color: var(--found);
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  animation: milestone 1800ms ease-out forwards;
+}
+
+@keyframes milestone {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.8);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) scale(1.08);
+  }
+  25% {
+    transform: scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.departure.reject .word {
+  color: var(--reject);
+  animation: rejected 600ms cubic-bezier(0.5, 0, 0.9, 0.5) forwards;
+}
+
+@keyframes rejected {
+  0% {
+    color: var(--found);
+    transform: translateX(0);
+  }
+  8% {
+    color: var(--reject);
+    transform: translateX(-6px);
+  }
+  16% {
+    transform: translateX(5px);
+  }
+  24% {
+    opacity: 0.8;
+    transform: translateX(0) rotate(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(160px) rotate(8deg) scale(0.8);
+    filter: blur(2px);
+  }
+}
+
+.departure.other .word {
+  color: var(--muted);
+  animation: aside 500ms ease-in forwards;
+}
+
+@keyframes aside {
+  to {
+    opacity: 0;
+    transform: translateX(-180px) scale(0.85);
+  }
+}
+
+/* +1 floating up from the count of answers */
+
+.stat.gold {
+  position: relative;
+}
+
+.plus-one {
+  position: absolute;
+  right: -24px;
+  top: 0;
+  color: var(--approve);
+  font-weight: 500;
+  animation: plus-one 900ms ease-out forwards;
+}
+
+@keyframes plus-one {
+  from {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate(10px, -22px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .departure,
+  .plus-one {
+    display: none;
   }
 }
 
