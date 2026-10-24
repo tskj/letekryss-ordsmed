@@ -1,52 +1,34 @@
-# DEPLOY
+# Ordsmed
 
-### `npm run deploy`
+Internal tool for going through the Norwegian word list and deciding which words can be
+answers in letekryss. Runs at https://tskj.github.io/letekryss-ordsmed/ and talks to the admin
+API in letekryss-generator (`/admin/*`), which needs `ADMIN_TOKEN` from the
+`letekryss-generator` service on Railway:
 
-tutorial for github pages funne her: https://github.com/gitname/react-gh-pages
+```
+cd ~/code/letekryss-generator && railway variables --service letekryss-generator --kv | grep ADMIN_TOKEN
+```
 
-# Getting Started with Create React App
+## Keys
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+| Key | |
+| --- | --- |
+| `J` | fasitord (approve) |
+| `F` | ikke fasitverdig (reject) |
+| `K` / `D` / `E` / `A` | kanskje / ikke et ord / egennavn / forkortelse |
+| space | hopp over |
+| `G` | the word is an answer, its inflections that follow aren't |
+| `H` | neither the word nor its inflections |
+| `Z` or backspace | undo the last decision, again and again, and the words come back |
+| `↑` `↓` then a key | change an older decision without undoing the ones after it |
+| `O` | look the word up on ordbokene.no |
 
-## Available Scripts
+A second `J` right after one is ignored for 0.6 s, so a double press can't approve the next word
+by accident. Every decision is logged on the server (`word_reviews`), so the history survives a
+reload, and a decision only applies if the word still has the status the picker saw, so two tabs
+can't overwrite each other.
 
-In the project directory, you can run:
+## Development
 
-### `npm start`
-
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
-
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
-
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+`npm start`, then open http://localhost:3000/?api=http://localhost:8999 to use a local
+letekryss-generator (`ADMIN_TOKEN=dev bun run start`). Pushing to master deploys to GitHub Pages.
