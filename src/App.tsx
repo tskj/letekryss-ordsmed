@@ -416,7 +416,6 @@ function Picker({ token, onLogout }: { token: string; onLogout: () => void }) {
         <span className="spacer" />
 
         <div className="stats">
-          <span className="stat">{remaining !== null ? n(remaining) : "…"} igjen</span>
           <span className="stat gold" title="godkjente ord på 4–10 bokstaver">
             {stats ? n(stats.approved ?? 0) : "…"} fasitord
             {departures.filter((d) => d.kind === "approve").map((d) => (
@@ -425,6 +424,7 @@ function Picker({ token, onLogout }: { token: string; onLogout: () => void }) {
           </span>
           <span className="stat" title="ikke fasitord: uegnet, forkastet, egennavn eller forkortelse">{stats ? n(rejected) : "…"} forkastet</span>
           <span className="stat" title="av alle ord på 4–10 bokstaver">{stats ? `${n(reviewed)} gjennomgått · ${reviewed_percent} %` : "…"}</span>
+          <span className="stat">{remaining !== null ? n(remaining) : "…"} igjen</span>
           <span className="stat">{session.decided} denne økta{rate !== null ? ` · ${rate}/min` : ""}</span>
           <button className="link" onClick={onLogout}>logg ut</button>
         </div>

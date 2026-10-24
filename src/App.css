@@ -354,7 +354,7 @@ kbd {
 
 .departure.reject .word {
   color: var(--reject);
-  animation: rejected 600ms cubic-bezier(0.5, 0, 0.9, 0.5) forwards;
+  animation: rejected 340ms cubic-bezier(0.5, 0, 0.9, 0.5) forwards;
 }
 
 @keyframes rejected {
