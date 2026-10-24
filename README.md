@@ -13,8 +13,8 @@ cd ~/code/letekryss-generator && railway variables --service letekryss-generator
 
 | Key | |
 | --- | --- |
-| `J` | fasitord (approve) |
-| `F` | ikke fasitverdig (reject) |
+| `F` | fasitord (approve) |
+| `J` | ikke fasitverdig (reject) |
 | `K` / `D` / `E` / `A` | kanskje / ikke et ord / egennavn / forkortelse |
 | space | hopp over |
 | `G` | the word is an answer, its inflections that follow aren't |
@@ -23,7 +23,7 @@ cd ~/code/letekryss-generator && railway variables --service letekryss-generator
 | `↑` `↓` then a key | change an older decision without undoing the ones after it |
 | `O` | look the word up on ordbokene.no |
 
-A second `J` right after one is ignored for 0.6 s, so a double press can't approve the next word
+A second `F` right after one is ignored for 0.6 s, so a double press can't approve the next word
 by accident. Every decision is logged on the server (`word_reviews`), so the history survives a
 reload, and a decision only applies if the word still has the status the picker saw, so two tabs
 can't overwrite each other.

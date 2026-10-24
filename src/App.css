@@ -133,6 +133,13 @@ kbd {
   flex: 1;
 }
 
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+}
+
 .stat {
   color: var(--muted);
   font-variant-numeric: tabular-nums;

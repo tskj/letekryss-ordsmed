@@ -34,15 +34,19 @@ const APPROVE_COOLDOWN_MS = 600;
 const REFILL_BELOW = 60;
 const HISTORY_SIZE = 200;
 
-// the keys, also shown in the legend. f and j are where the index fingers rest
+// the keys, also shown in the legend. f and j are where the index fingers rest,
+// f for fasitord, on the same hand as g, which approves a word without its inflections
 const KEYS: Array<{ key: string; label: string; to: Status }> = [
-  { key: "j", label: "J", to: "approved" },
-  { key: "f", label: "F", to: "unsuitable" },
+  { key: "f", label: "F", to: "approved" },
+  { key: "j", label: "J", to: "unsuitable" },
   { key: "k", label: "K", to: "maybe" },
   { key: "d", label: "D", to: "discarded" },
   { key: "e", label: "E", to: "egennavn" },
   { key: "a", label: "A", to: "abbreviation" },
 ];
+
+// 183 400, with a space between the thousands like in norwegian
+const n = (x: number): string => x.toLocaleString("nb-NO");
 
 const read_json = <T,>(key: string, fallback: T): T => {
   try {
@@ -336,6 +340,12 @@ function Picker({ token, onLogout }: { token: string; onLogout: () => void }) {
   const minutes = session.started_at ? (Date.now() - session.started_at) / 60000 : 0;
   const rate    = minutes > 0.5 ? Math.round(session.decided / minutes) : null;
 
+  const count_of         = (statuses: Status[]) => statuses.reduce((sum, s) => sum + (stats?.[s] ?? 0), 0);
+  const total            = count_of([...STATUSES]);
+  const reviewed         = total - count_of(["unchecked"]);
+  const rejected         = count_of(["unsuitable", "discarded", "egennavn", "abbreviation"]);
+  const reviewed_percent = total > 0 ? (100 * reviewed / total).toFixed(1).replace(".", ",") : "0";
+
   const target = selected !== null ? history[selected]?.changes[0] : null;
 
   return (
@@ -364,10 +374,14 @@ function Picker({ token, onLogout }: { token: string; onLogout: () => void }) {
 
         <span className="spacer" />
 
-        <span className="stat">{remaining ?? "…"} igjen</span>
-        <span className="stat gold">{stats ? stats.approved ?? 0 : "…"} fasitord</span>
-        <span className="stat">{session.decided} denne økta{rate !== null ? ` · ${rate}/min` : ""}</span>
-        <button className="link" onClick={onLogout}>logg ut</button>
+        <div className="stats">
+          <span className="stat">{remaining !== null ? n(remaining) : "…"} igjen</span>
+          <span className="stat gold" title="godkjente ord på 4–10 bokstaver">{stats ? n(stats.approved ?? 0) : "…"} fasitord</span>
+          <span className="stat" title="ikke fasitord: uegnet, forkastet, egennavn eller forkortelse">{stats ? n(rejected) : "…"} forkastet</span>
+          <span className="stat" title="av alle ord på 4–10 bokstaver">{stats ? `${n(reviewed)} gjennomgått · ${reviewed_percent} %` : "…"}</span>
+          <span className="stat">{session.decided} denne økta{rate !== null ? ` · ${rate}/min` : ""}</span>
+          <button className="link" onClick={onLogout}>logg ut</button>
+        </div>
       </header>
 
       <main className="stage">
@@ -409,11 +423,11 @@ function Picker({ token, onLogout }: { token: string; onLogout: () => void }) {
         )}
 
         <div className="choices">
-          <button className="reject big" onClick={() => choose("unsuitable")}>
-            ikke fasitverdig <kbd>F</kbd>
-          </button>
           <button className={`approve big${cooling ? " cooling" : ""}`} onClick={() => choose("approved")}>
-            fasitord <kbd>J</kbd>
+            fasitord <kbd>F</kbd>
+          </button>
+          <button className="reject big" onClick={() => choose("unsuitable")}>
+            ikke fasitverdig <kbd>J</kbd>
           </button>
         </div>
         <div className="choices small">
