@@ -5,6 +5,8 @@ import type { Word } from "./api";
 const ENDINGS = [
   "a", "as", "e", "en", "ene", "enes", "ens", "er", "ere", "ers", "es", "est", "este",
   "et", "ets", "r", "s", "t", "te", "de", "ende",
+  // after a word that ends in e, like KAKEN and KAKENE after KAKE
+  "n", "ne", "nes", "ns", "rs",
 ];
 
 /**

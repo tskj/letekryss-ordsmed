@@ -20,8 +20,11 @@ cd ~/code/letekryss-generator && railway variables --service letekryss-generator
 | `G` | the word is an answer, its inflections that follow aren't |
 | `H` | neither the word nor its inflections |
 | `Z` or backspace | undo the last decision, again and again, and the words come back |
-| `↑` `↓` then a key | change an older decision without undoing the ones after it |
+| `↑` `↓` then a key | move back along the belt to an earlier word and change it, without undoing the ones after it |
 | `O` | look the word up on ordbokene.no |
+
+The words go by on a belt: the ones you've decided above with what they got, the next ones below,
+and the forms of the word in focus that `G` and `H` decide along with it marked with ↳.
 
 A second `F` right after one is ignored for 0.6 s, so a double press can't approve the next word
 by accident. Every decision is logged on the server (`word_reviews`), so the history survives a

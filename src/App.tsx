@@ -68,6 +68,22 @@ const write = (key: string, value: string) => {
 let next_key = 0;
 const new_key = () => `d${next_key++}`;
 
+type BeltItem = {
+  word:     Word;
+  status:   Status;
+  place:    "past" | "current" | "upcoming";
+  decision: Decision | null;
+  skipped:  boolean;
+};
+
+// the belt's geometry: how far from the word in focus the others are shown,
+// the space around it, the distance between the small ones and their size
+const BELT_REACH     = 8;
+const BELT_GAP_ABOVE = 92;
+const BELT_GAP_BELOW = 104;
+const BELT_ROW       = 40;
+const BELT_SCALE     = 0.3;
+
 type Departure = { key: string; word: string; kind: "approve" | "reject" | "other"; milestone: boolean };
 
 const DEPARTURE_MS = 900;
@@ -362,8 +378,8 @@ function Picker({ token, onLogout }: { token: string; onLogout: () => void }) {
     else if (key === "g" && inflections.length > 0) decide("approved", { group_to: "unsuitable" });
     else if (key === "h" && inflections.length > 0) decide("unsuitable", { group_to: "unsuitable" });
     else if (key === "o" && current)                window.open(lookup_url(current.word), "ordbok");
-    else if (key === "arrowdown")                   set_selected((s) => Math.min((s ?? -1) + 1, history.length - 1));
-    else if (key === "arrowup")                     set_selected((s) => (s === null || s === 0 ? null : s - 1));
+    else if (key === "arrowup")                     set_selected((s) => Math.min((s ?? -1) + 1, history.length - 1));
+    else if (key === "arrowdown")                   set_selected((s) => (s === null || s === 0 ? null : s - 1));
     else if (key === "escape")                      set_selected(null);
     else return;
 
@@ -388,6 +404,35 @@ function Picker({ token, onLogout }: { token: string; onLogout: () => void }) {
   const reviewed_percent = total > 0 ? (100 * reviewed / total).toFixed(1).replace(".", ",") : "0";
 
   const target = selected !== null ? history[selected]?.changes[0] : null;
+
+  // the belt: the decided words in the order they were decided, then the
+  // word to decide and the ones after it. each word keeps its place (and its
+  // element) as it moves up, so it slides instead of jumping
+  const queued_ids = new Set(queue.map((w) => w.id));
+  const past_by_id = new Map<number, BeltItem>();
+  for (const decision of [...history].reverse()) {
+    const skipped = decision.changes.every((c) => c.from === c.to);
+
+    for (const c of decision.changes) {
+      if (queued_ids.has(c.word.id)) continue;
+
+      past_by_id.delete(c.word.id);
+      past_by_id.set(c.word.id, { word: c.word, status: c.to, place: "past", decision, skipped });
+    }
+  }
+  const past     = Array.from(past_by_id.values());
+  const upcoming = queue.slice(0, BELT_REACH + 1).map((word, i): BeltItem => ({
+    word,
+    status:   word.checked,
+    place:    i === 0 ? "current" : "upcoming",
+    decision: null,
+    skipped:  false,
+  }));
+  const belt = [...past, ...upcoming];
+
+  const focus_past     = selected !== null ? past.findIndex((item) => item.decision === history[selected]) : -1;
+  const focus          = focus_past >= 0 ? focus_past : past.length;
+  const inflection_ids = new Set(target ? [] : inflections.map((w) => w.id));
 
   return (
     <div className="picker">
@@ -431,124 +476,110 @@ function Picker({ token, onLogout }: { token: string; onLogout: () => void }) {
       </header>
 
       <main className="stage">
-        <div className="slot">
-        {departures.map((d) => (
-          <div key={d.key} className={`departure ${d.kind}${d.milestone ? " milestone" : ""}`} aria-hidden>
-            <div className="word">{d.word}</div>
-            {d.kind === "approve" && (
-              <>
-                <div className="stamp">✓ fasitord</div>
-                <div className="sparkles">
-                  {SPARKLES.map((sp, i) => (
-                    <span key={i} style={{ "--angle": `${sp.angle}deg`, "--distance": `${sp.distance * (d.milestone ? 2.2 : 1)}px` } as CSSProperties} />
-                  ))}
-                </div>
-              </>
-            )}
-            {d.milestone && <div className="milestone-text">{approved_now} fasitord denne økta!</div>}
-          </div>
-        ))}
-        {target ? (
-          <div className="current editing">
-            <div className="hint">endrer et tidligere valg · Esc for å gå tilbake</div>
-            <div className="word">{target.word.word}</div>
-            <div className="meta">nå: {STATUS_LABELS[target.to]}</div>
-          </div>
-        ) : current ? (
-          <div className="current incoming" key={current.id}>
-            <div className="word">{current.word}</div>
-            <div className="meta">
-              {current.word.length} bokstaver ·{" "}
-              <a href={lookup_url(current.word)} target="ordbok" rel="noreferrer">slå opp (O)</a>
-            </div>
-          </div>
-        ) : (
-          <div className="current empty">{loading ? "henter ord…" : "ingen flere ord med dette filteret"}</div>
-        )}
-        </div>
+        <div className="belt">
+          {belt.map((item, i) => {
+            const d = i - focus;
+            if (Math.abs(d) > BELT_REACH) return null;
 
-        {!target && inflections.length > 0 && (
-          <div className="inflections">
-            <div className="forms">
-              <span className="base">{current!.word}</span>
-              {inflections.map((w) => (
-                <span key={w.id}>{w.word}</span>
-              ))}
-            </div>
-            <div className="actions">
-              <button className="approve" onClick={() => decide("approved", { group_to: "unsuitable" })}>
-                grunnform er fasitord, resten ikke <kbd>G</kbd>
-              </button>
-              <button className="reject" onClick={() => decide("unsuitable", { group_to: "unsuitable" })}>
-                ingen er fasitord <kbd>H</kbd>
-              </button>
-            </div>
-          </div>
-        )}
+            const y       = d === 0 ? 0 : Math.sign(d) * (d < 0 ? BELT_GAP_ABOVE : BELT_GAP_BELOW) + (d - Math.sign(d)) * BELT_ROW;
+            const scale   = d === 0 ? 1 : BELT_SCALE;
+            const opacity = d === 0 ? 1 : Math.max(0, 0.85 - (Math.abs(d) - 1) * 0.12);
+            const fresh   = item.decision && departures.find((x) => x.key === item.decision!.key);
 
-        <div className="choices">
-          <button className={`approve big${cooling ? " cooling" : ""}`} onClick={() => choose("approved")}>
-            fasitord <kbd>F</kbd>
-          </button>
-          <button className="reject big" onClick={() => choose("unsuitable")}>
-            ikke fasitverdig <kbd>J</kbd>
-          </button>
-        </div>
-        <div className="choices small">
-          {KEYS.filter((k) => k.to !== "approved" && k.to !== "unsuitable").map((k) => (
-            <button key={k.key} onClick={() => choose(k.to)}>
-              {STATUS_LABELS[k.to]} <kbd>{k.label}</kbd>
-            </button>
-          ))}
-          {!target && (
-            <button onClick={skip}>
-              hopp over <kbd>␣</kbd>
-            </button>
-          )}
-        </div>
-
-        {!target && (
-          <ol className="upcoming">
-            {queue.slice(1 + inflections.length, 12).map((w, i) => (
-              <li key={w.id} style={{ opacity: 0.7 - i * 0.06 }}>{w.word}</li>
-            ))}
-          </ol>
-        )}
-      </main>
-
-      <aside className="history">
-        <div className="history-head">
-          <span>historikk</span>
-          <button onClick={undo} disabled={history.length === 0}>
-            angre siste <kbd>Z</kbd>
-          </button>
-        </div>
-        <ol>
-          {history.map((d, i) => {
-            const first = d.changes[0]!;
-            const skipped = d.changes.every((c) => c.from === c.to);
+            const classes = [
+              "belt-item",
+              item.place,
+              item.place === "past" ? (item.skipped ? "skipped" : item.status) : "",
+              inflection_ids.has(item.word.id) ? "inflection" : "",
+              item.place === "current" && inflection_ids.size > 0 ? "has-inflections" : "",
+              d === 0 ? "focus" : "",
+              fresh ? `fresh-${fresh.kind}` : "",
+              item.decision?.state === "failed" ? "failed" : "",
+            ];
 
             return (
-              <li
-                key={d.key}
-                className={`${i === selected ? "selected" : ""} ${d.state}`}
-                onClick={() => set_selected(i === selected ? null : i)}
+              <div
+                key={item.word.id}
+                className={classes.filter(Boolean).join(" ")}
+                style={{ transform: `translate(-50%, -50%) translateY(${y}px) scale(${scale})`, opacity }}
+                onClick={() => set_selected(item.decision ? history.indexOf(item.decision) : null)}
               >
-                <span className="w">{first.word.word}</span>
-                {d.changes.length > 1 && <span className="more">+{d.changes.length - 1}</span>}
-                <span className={`chip ${skipped ? "skipped" : first.to}`}>
-                  {skipped ? "hoppet over" : STATUS_LABELS[first.to]}
-                </span>
-                {d.state === "saving" && <span className="dot" title="lagrer" />}
-                {d.state === "failed" && <span className="dot failed" title="ble ikke lagret" />}
-              </li>
+                <span className="w">{item.word.word}</span>
+                {item.place === "past" && d !== 0 && (
+                  <span className={`chip ${item.skipped ? "skipped" : item.status}`}>
+                    {item.skipped ? "hoppet over" : STATUS_LABELS[item.status]}
+                  </span>
+                )}
+              </div>
             );
           })}
-        </ol>
-        <p className="legend">
-          ↑↓ velg et tidligere ord og trykk en bokstav for å endre det. Z angrer det siste og legger ordet tilbake i køen.
-        </p>
-      </aside>
+
+          <div className="belt-meta">
+            {target ? (
+              <>
+                <span className="editing">endrer et tidligere valg</span> · nå: {STATUS_LABELS[target.to]} · Esc går tilbake
+              </>
+            ) : current ? (
+              <>
+                {current.word.length} bokstaver ·{" "}
+                <a href={lookup_url(current.word)} target="ordbok" rel="noreferrer">slå opp (O)</a>
+                {inflections.length > 0 && <> · <span className="inflection-note">bøyningsformer under</span></>}
+              </>
+            ) : null}
+          </div>
+
+          {!current && !target && (
+            <div className="belt-empty">{loading ? "henter ord…" : "ingen flere ord med dette filteret"}</div>
+          )}
+
+          {departures.filter((d) => d.kind === "approve").map((d) => (
+            <div key={d.key} className={`celebration${d.milestone ? " milestone" : ""}`} aria-hidden>
+              <div className="stamp">✓ fasitord</div>
+              <div className="sparkles">
+                {SPARKLES.map((sp, i) => (
+                  <span key={i} style={{ "--angle": `${sp.angle}deg`, "--distance": `${sp.distance * (d.milestone ? 2.2 : 1)}px` } as CSSProperties} />
+                ))}
+              </div>
+              {d.milestone && <div className="milestone-text">{approved_now} fasitord denne økta!</div>}
+            </div>
+          ))}
+        </div>
+
+        <div className="controls">
+          <div className="choices">
+            <button className={`approve big${cooling ? " cooling" : ""}`} onClick={() => choose("approved")}>
+              fasitord <kbd>F</kbd>
+            </button>
+            <button className="reject big" onClick={() => choose("unsuitable")}>
+              ikke fasitverdig <kbd>J</kbd>
+            </button>
+          </div>
+          <div className="choices small">
+            {KEYS.filter((k) => k.to !== "approved" && k.to !== "unsuitable").map((k) => (
+              <button key={k.key} onClick={() => choose(k.to)}>
+                {STATUS_LABELS[k.to]} <kbd>{k.label}</kbd>
+              </button>
+            ))}
+            <button onClick={skip} disabled={!!target || !current}>
+              hopp over <kbd>␣</kbd>
+            </button>
+            <button onClick={undo} disabled={history.length === 0}>
+              angre <kbd>Z</kbd>
+            </button>
+          </div>
+          <div className="choices small group">
+            <button className="approve" disabled={!!target || inflections.length === 0} onClick={() => decide("approved", { group_to: "unsuitable" })}>
+              grunnform er fasitord, bøyningene ikke <kbd>G</kbd>
+            </button>
+            <button className="reject" disabled={!!target || inflections.length === 0} onClick={() => decide("unsuitable", { group_to: "unsuitable" })}>
+              ingen av dem <kbd>H</kbd>
+            </button>
+          </div>
+          <p className="legend">
+            ↑↓ blar i det du har valgt, og en bokstav endrer valget · Esc tilbake · O slår opp · Z angrer det siste og legger ordet tilbake
+          </p>
+        </div>
+      </main>
 
       {toast && <div className="toast" onClick={() => set_toast(null)}>{toast}</div>}
     </div>

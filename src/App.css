@@ -87,7 +87,6 @@ kbd {
 
 .picker {
   display: grid;
-  grid-template-columns: 1fr 320px;
   grid-template-rows: auto 1fr;
   height: 100vh;
 }
@@ -157,91 +156,168 @@ kbd {
   cursor: pointer;
 }
 
-/* the word */
+/* the belt: the decided words above, the one to decide in the middle and
+   the next ones below. every word is placed with a transform, so moving
+   along is a slide and nothing else on the page moves */
 
 .stage {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 7vh 24px 24px;
+  min-height: 0;
   overflow: hidden;
 }
 
-.slot {
+.belt {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex: 1;
+  min-height: 380px;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(transparent, #000 18%, #000 80%, transparent);
+  mask-image: linear-gradient(transparent, #000 18%, #000 80%, transparent);
 }
 
-.current {
-  text-align: center;
-  animation: word-in 160ms ease-out;
-}
-
-/* the next word waits for the decided one to get out of the way */
-.current.incoming {
-  animation: word-in 200ms 200ms ease-out backwards;
-}
-
-@keyframes word-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-}
-
-/* a decided word on its way out, over the next one coming in */
-
-.departure {
+.belt-item {
   position: absolute;
-  top: 0;
   left: 50%;
-  transform: translateX(-50%);
-  pointer-events: none;
+  top: 42%;
+  display: flex;
+  align-items: center;
+  gap: 24px;
   white-space: nowrap;
-  text-align: center;
-  z-index: 2;
-}
-
-.departure .word {
-  font-size: clamp(40px, 8vw, 88px);
+  font-size: clamp(44px, 8vw, 88px);
   font-weight: 300;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    transform 280ms cubic-bezier(0.25, 0.9, 0.3, 1),
+    opacity 280ms ease,
+    color 280ms ease;
 }
 
-.departure.approve .word {
+.belt-item.focus {
+  color: var(--found);
+  cursor: default;
+}
+
+.belt-item.past {
+  color: var(--muted);
+}
+
+.belt-item.past.approved {
   color: var(--approve);
-  animation: approved 900ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.belt-item.past.unsuitable,
+.belt-item.past.discarded {
+  color: var(--reject);
+}
+
+.belt-item.past.focus .w {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 14px;
+}
+
+.belt-item.failed .w {
+  text-decoration: underline wavy var(--reject);
+}
+
+/* the forms of the word in focus that come right after it, which G and H
+   decide along with it */
+.belt-item.inflection {
+  color: var(--found);
+}
+
+.belt-item.inflection .w::before {
+  content: "↳ ";
+  opacity: 0.6;
+}
+
+.belt-item .chip {
+  padding: 2px 22px;
+  border-width: 3px;
+  font-size: 40px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+/* the word just decided, on its way up */
+
+.belt-item.fresh-approve .w {
+  animation: approved 700ms ease-out;
 }
 
 @keyframes approved {
-  0% {
-    color: var(--found);
-    transform: scale(1);
-    text-shadow: 0 0 0 transparent;
-  }
-  14% {
-    color: var(--approve);
-    transform: scale(1.1);
-    text-shadow: 0 0 28px rgba(127, 214, 164, 0.8);
-  }
-  35% {
-    opacity: 0.9;
-    transform: scale(1) translateY(-50px);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(0.7) translateY(-130px);
-    text-shadow: 0 0 40px rgba(127, 214, 164, 0);
+  20% {
+    text-shadow: 0 0 40px rgba(127, 214, 164, 0.9);
   }
 }
 
-.departure .stamp {
+.belt-item .w {
+  display: inline-block;
+}
+
+.belt-item.fresh-reject .w {
+  animation: rejected 260ms ease-out;
+}
+
+@keyframes rejected {
+  25% {
+    transform: translateX(-14px);
+  }
+  50% {
+    transform: translateX(10px);
+  }
+  75% {
+    transform: translateX(-5px);
+  }
+}
+
+.belt-meta {
   position: absolute;
-  top: -6px;
-  right: -28px;
+  left: 0;
+  right: 0;
+  top: calc(42% + 52px);
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.belt-meta a {
+  color: inherit;
+}
+
+.belt-meta .editing,
+.belt-meta .inflection-note {
+  color: var(--found);
+}
+
+.belt-empty {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 42%;
+  transform: translateY(-50%);
+  text-align: center;
+  color: var(--muted);
+}
+
+/* an approved word gets a stamp and sparkles where it was */
+
+.celebration {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.celebration .stamp {
+  position: absolute;
+  left: 150px;
+  top: -64px;
   padding: 4px 10px;
   border: 2px solid var(--approve);
   border-radius: 8px;
@@ -250,6 +326,7 @@ kbd {
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  white-space: nowrap;
   animation: stamp 900ms ease-out forwards;
 }
 
@@ -316,14 +393,14 @@ kbd {
   }
 }
 
-.departure.milestone .sparkles span {
+.celebration.milestone .sparkles span {
   animation-duration: 1400ms;
 }
 
 .milestone-text {
   position: absolute;
   left: 50%;
-  top: -52px;
+  top: -150px;
   translate: -50% 0;
   color: var(--found);
   font-size: 22px;
@@ -349,46 +426,6 @@ kbd {
   }
   100% {
     opacity: 0;
-  }
-}
-
-.departure.reject .word {
-  color: var(--reject);
-  animation: rejected 340ms cubic-bezier(0.5, 0, 0.9, 0.5) forwards;
-}
-
-@keyframes rejected {
-  0% {
-    color: var(--found);
-    transform: translateX(0);
-  }
-  8% {
-    color: var(--reject);
-    transform: translateX(-6px);
-  }
-  16% {
-    transform: translateX(5px);
-  }
-  24% {
-    opacity: 0.8;
-    transform: translateX(0) rotate(0);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(160px) rotate(8deg) scale(0.8);
-    filter: blur(2px);
-  }
-}
-
-.departure.other .word {
-  color: var(--muted);
-  animation: aside 500ms ease-in forwards;
-}
-
-@keyframes aside {
-  to {
-    opacity: 0;
-    transform: translateX(-180px) scale(0.85);
   }
 }
 
@@ -419,94 +456,44 @@ kbd {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .departure,
+  .belt-item {
+    transition: none;
+  }
+
+  .celebration,
   .plus-one {
     display: none;
   }
 }
 
-.current .word {
-  font-size: clamp(40px, 8vw, 88px);
-  font-weight: 300;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--found);
-}
-
-.current.editing .word {
-  color: var(--text);
-}
-
-.current .meta,
-.current .hint {
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: 14px;
-}
-
-.current .hint {
-  color: var(--found);
-}
-
-.current .meta a {
-  color: inherit;
-}
-
-.current.empty {
-  margin: 10vh 0;
-  color: var(--muted);
-}
-
-/* inflections */
-
-.inflections {
-  margin-top: 22px;
-  padding: 14px 18px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface);
-  text-align: center;
-}
-
-.inflections .forms {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--reject);
-}
-
-.inflections .forms .base {
-  color: var(--approve);
-}
-
-.inflections .actions {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 12px;
-}
-
 /* buttons */
+
+.controls {
+  padding: 8px 20px 18px;
+}
 
 .choices {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 12px;
-  margin-top: 32px;
 }
 
 .choices.small {
-  margin-top: 14px;
+  margin-top: 12px;
   gap: 8px;
 }
 
-.choices button,
-.inflections button,
-.history-head button {
+.choices button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.choices button:disabled:hover {
+  background: transparent;
+}
+
+.choices button {
   position: relative;
   overflow: hidden;
   padding: 8px 14px;
@@ -519,9 +506,7 @@ kbd {
   transition: background-color 0.15s;
 }
 
-.choices button:hover,
-.inflections button:hover,
-.history-head button:hover {
+.choices button:hover {
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -559,84 +544,6 @@ button.approve.cooling::after {
   to {
     width: 0;
   }
-}
-
-.upcoming {
-  margin: 36px 0 0;
-  padding: 0;
-  list-style: none;
-  text-align: center;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 18px;
-  line-height: 1.8;
-}
-
-/* history */
-
-.history {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  border-left: 1px solid var(--border);
-  background: var(--surface-sunken);
-}
-
-.history-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  color: var(--muted);
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-
-.history-head button {
-  text-transform: none;
-  letter-spacing: 0;
-  font-size: 13px;
-}
-
-.history ol {
-  flex: 1;
-  margin: 0;
-  padding: 0 8px;
-  overflow-y: auto;
-  list-style: none;
-}
-
-.history li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.history li:hover {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.history li.selected {
-  background: rgba(255, 212, 121, 0.12);
-  outline: 1px solid rgba(255, 212, 121, 0.5);
-}
-
-.history .w {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.history .more {
-  color: var(--muted);
-  font-size: 12px;
 }
 
 .chip {
@@ -685,12 +592,10 @@ button.approve.cooling::after {
 }
 
 .legend {
-  margin: 0;
-  padding: 12px 16px 16px;
-  border-top: 1px solid var(--border);
+  margin: 14px 0 0;
   color: var(--muted);
   font-size: 12px;
-  line-height: 1.5;
+  text-align: center;
 }
 
 .toast {
@@ -706,18 +611,4 @@ button.approve.cooling::after {
   color: var(--text);
   font-size: 14px;
   cursor: pointer;
-}
-
-@media (max-width: 800px) {
-  .picker {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
-    height: auto;
-  }
-
-  .history {
-    border-left: 0;
-    border-top: 1px solid var(--border);
-    max-height: 50vh;
-  }
 }
