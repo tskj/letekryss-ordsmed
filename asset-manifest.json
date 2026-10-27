@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/letekryss-ordsmed/static/css/main.1a955a4e.css",
+    "main.js": "/letekryss-ordsmed/static/js/main.8c21794d.js",
+    "index.html": "/letekryss-ordsmed/index.html",
+    "main.1a955a4e.css.map": "/letekryss-ordsmed/static/css/main.1a955a4e.css.map",
+    "main.8c21794d.js.map": "/letekryss-ordsmed/static/js/main.8c21794d.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.1a955a4e.css",
+    "static/js/main.8c21794d.js"
+  ]
+}
