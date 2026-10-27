@@ -16,16 +16,18 @@ import { inflections_after } from "./inflections";
 import "./App.css";
 
 // one decision in the history, about one word or a word and its inflections.
-// a skip has from === to, and never reaches the server
+// a skip never reaches the server. a decision can have from === to, like
+// approving a word that was approved before anyone looked at it
 type Change = { word: Word; from: Status; to: Status };
 
 type Decision = {
   key:     string;
   changes: Change[];
   state:   "saving" | "saved" | "failed";
+  skip?:   boolean;
 };
 
-const DEFAULT_FILTER: Filter = { status: "unchecked", prefix: "", min_length: 4, max_length: 10 };
+const DEFAULT_FILTER: Filter = { status: "unchecked", prefix: "", min_length: 4, max_length: 10, unreviewed: false };
 
 // approving twice in a row by accident is the expensive mistake, since it puts
 // a word in a daily puzzle, so a second approve right after one is ignored
@@ -230,10 +232,11 @@ function Picker({ token, onLogout }: { token: string; onLogout: () => void }) {
   }, [toast]);
 
   // sends the changes, and marks the decision saved or failed. a conflict
-  // means the list is out of date, so it's loaded again
-  const save = (key: string, changes: Change[]) => {
+  // means the list is out of date, so it's loaded again. a word that keeps
+  // its status is only sent when that's the decision, so it counts as reviewed
+  const save = (key: string, changes: Change[], keep_same = false) => {
     const reviews: ReviewRequest[] = changes
-      .filter((c) => c.from !== c.to)
+      .filter((c) => keep_same || c.from !== c.to)
       .map((c) => ({ id: c.word.id, from_status: c.from, to_status: c.to }));
     if (reviews.length === 0) return;
 
@@ -297,14 +300,14 @@ function Picker({ token, onLogout }: { token: string; onLogout: () => void }) {
     count_changes(changes);
     set_remaining((r) => (r === null ? r : Math.max(0, r - words.length)));
     count_decision();
-    save(key, changes);
+    save(key, changes, true);
   };
 
   const skip = () => {
     if (!current) return;
 
     set_queue((q) => q.slice(1));
-    set_history((h) => [{ key: new_key(), changes: [{ word: current, from: current.checked, to: current.checked }], state: "saved" as const }, ...h]);
+    set_history((h) => [{ key: new_key(), changes: [{ word: current, from: current.checked, to: current.checked }], state: "saved" as const, skip: true }, ...h]);
   };
 
   /**
@@ -411,7 +414,7 @@ function Picker({ token, onLogout }: { token: string; onLogout: () => void }) {
   const queued_ids = new Set(queue.map((w) => w.id));
   const past_by_id = new Map<number, BeltItem>();
   for (const decision of [...history].reverse()) {
-    const skipped = decision.changes.every((c) => c.from === c.to);
+    const skipped = decision.skip ?? false;
 
     for (const c of decision.changes) {
       if (queued_ids.has(c.word.id)) continue;
@@ -456,6 +459,10 @@ function Picker({ token, onLogout }: { token: string; onLogout: () => void }) {
           <input type="number" min={1} max={15} value={filter.min_length} onChange={(e) => set_filter({ ...filter, min_length: Number(e.target.value) || 1 })} />
           –
           <input type="number" min={1} max={15} value={filter.max_length} onChange={(e) => set_filter({ ...filter, max_length: Number(e.target.value) || 15 })} />
+        </label>
+        <label title="bare ord ingen har tatt stilling til her, som fasitordene fra før ordsmeden fantes">
+          <input type="checkbox" checked={filter.unreviewed} onChange={(e) => set_filter({ ...filter, unreviewed: e.target.checked })} />
+          bare ugjennomgåtte
         </label>
 
         <span className="spacer" />

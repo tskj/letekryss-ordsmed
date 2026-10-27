@@ -26,6 +26,10 @@ cd ~/code/letekryss-generator && railway variables --service letekryss-generator
 The words go by on a belt: the ones you've decided above with what they got, the next ones below,
 and the forms of the word in focus that `G` and `H` decide along with it marked with ↳.
 
+"bare ugjennomgåtte" shows only the words nobody has decided on in the picker. With "fasitord" that's
+the answers approved before the picker existed, and `F` on one of those keeps it approved and marks it
+reviewed.
+
 A second `F` right after one is ignored for 0.6 s, so a double press can't approve the next word
 by accident. Every decision is logged on the server (`word_reviews`), so the history survives a
 reload, and a decision only applies if the word still has the status the picker saw, so two tabs

@@ -45,6 +45,8 @@ export type Filter = {
   prefix:     string;
   min_length: number;
   max_length: number;
+  // only the words nobody has decided on in the picker
+  unreviewed: boolean;
 };
 
 export class ApiError extends Error {
@@ -75,6 +77,7 @@ export const fetch_words = (token: string, filter: Filter, after_id: number, lim
     prefix:     filter.prefix,
     min_length: String(filter.min_length),
     max_length: String(filter.max_length),
+    unreviewed: String(filter.unreviewed),
     after_id:   String(after_id),
     limit:      String(limit),
   });
